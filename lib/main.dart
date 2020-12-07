@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import 'db_provider.dart';
 import 'notes.dart';
@@ -11,9 +12,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        darkTheme: ThemeData.dark(),
+        debugShowCheckedModeBanner: false,
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+        ),
         theme: ThemeData(
             primarySwatch: Colors.blue,
+            brightness: Brightness.light,
             buttonTheme: ButtonThemeData(
               buttonColor: Colors.blueAccent,
               shape: RoundedRectangleBorder(
@@ -53,21 +58,41 @@ class TodoListState extends State<TodoList> {
         });
   }
 
-  Widget buildList(snapshot) {
-    return ListView.builder(
-      itemCount: snapshot.data.length,
-      itemBuilder: (BuildContext context, int index) {
-        Notes item = snapshot.data[index];
-        return ListTile(
-          title: Text(item.title),
-          subtitle: Text(item.desc),
-          onTap: () => _editNote(item),
-        );
-      },
-    );
+  Widget buildList2(snapshot) {
+    List<Notes> list = snapshot.data.reversed.toList();
+    return Container(
+        margin: const EdgeInsets.fromLTRB(5.0, 10, 5.0, 0),
+        child: StaggeredGridView.countBuilder(
+          crossAxisCount: 4,
+          addRepaintBoundaries: true,
+          itemCount: list.length,
+          itemBuilder: (BuildContext context, int index) {
+            Notes item = list[index];
+
+            return Container(
+              padding: const EdgeInsets.all(3.0),
+              decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black26),
+                  borderRadius: BorderRadius.circular(6)),
+              child: Padding(
+                padding: const EdgeInsets.all(0.0),
+                child: ListTile(
+                  tileColor: Colors.transparent,
+                  title: Text(item.title),
+                  subtitle: Text(item.desc),
+                  onTap: () => _editNote(item),
+                ),
+              ),
+            );
+          },
+          staggeredTileBuilder: (int index) => StaggeredTile.fit(2),
+          mainAxisSpacing: 4.0,
+          crossAxisSpacing: 4.0,
+        ),
+        color: Colors.transparent);
   }
 
-  Widget _buildTodoList2() {
+  Widget _buildTodoList2(context) {
     return FutureBuilder<List<Notes>>(
         future: DBProvider.da.getAllNotes(),
         builder: (BuildContext context, AsyncSnapshot<List<Notes>> snapshot) {
@@ -79,7 +104,7 @@ class TodoListState extends State<TodoList> {
                 style: TextStyle(color: Colors.blue, fontSize: 29),
               ));
             } else {
-              return buildList(snapshot);
+              return buildList2(snapshot);
             }
           } else if (snapshot.hasError) {
             return Center(
@@ -95,13 +120,13 @@ class TodoListState extends State<TodoList> {
         });
   }
 
-  final _formKey = GlobalKey<FormState>();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Tasks')),
-      body: _buildTodoList2(),
+      appBar: AppBar(
+        title: Text('Tasks'),
+      ),
+      body: _buildTodoList2(context),
       floatingActionButton: FloatingActionButton(
           onPressed: _pushAddTodoScreen,
           tooltip: 'Add task',
@@ -110,83 +135,93 @@ class TodoListState extends State<TodoList> {
   }
 
   void _pushAddTodoScreen() {
+    final _formKey2 = GlobalKey<FormState>();
+
     var title = new TextEditingController();
     var desc = new TextEditingController();
     Navigator.of(context).push(MaterialPageRoute(builder: (context) {
       return Scaffold(
           appBar: AppBar(title: Text('Add a task')),
-          body: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    autofocus: true,
-                    /*  onChanged: (val) {
-                      title = val;
-                    },*/
-                    controller: title,
-                    decoration: InputDecoration(
-                        hintText: 'Title',
-                        contentPadding: const EdgeInsets.all(16.0)),
-                    validator: (value) {
-                      if (value.isEmpty) {
-                        return 'Please enter title';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    /*onChanged: (val) {
-                      desc = val;
-                    },*/
-                    controller: desc,
-                    autofocus: false,
-                    validator: (value) {
-                      if (value.isEmpty) {
-                        return 'Please enter note';
-                      }
-                      return null;
-                    },
-                    decoration: InputDecoration(
-                        hintText: 'Take a note',
-                        contentPadding: const EdgeInsets.all(16.0)),
-                  ),
-                  Padding(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: RaisedButton(
-                        textColor: Colors.white,
-                        child: Text(
-                          "Done",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        onPressed: () async {
-                          if (_formKey.currentState.validate()) {
-                            if (desc.text.toString() != null &&
-                                title.text.toString() != null) {
-                              var notes = Notes(1, title.text.toString(),
-                                  desc.text.toString());
-                              await DBProvider.da.newTask(notes).then((value) {
-                                Navigator.pop(context);
-                                setState(() {});
-                              });
-                            } else {
-                              print("not null");
-                            }
-                          } else {
-                            print("not validate");
-                          }
-                        },
-                      ),
+          body: SingleChildScrollView(
+            child: Form(
+                key: _formKey2,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: title,
+                      maxLength: 50,
+                      decoration: InputDecoration(
+                          hintText: 'Title',
+                          contentPadding: const EdgeInsets.all(16.0)),
+                      validator: (value) {
+                        if (value.isEmpty) {
+                          return 'Please enter title';
+                        }
+                        return null;
+                      },
                     ),
-                    padding: EdgeInsets.all(20),
-                  ),
-                ],
-              )));
+                    TextFormField(
+                      keyboardType: TextInputType.multiline,
+                      maxLength: null,
+                      maxLines: null,
+                      textInputAction: TextInputAction.newline,
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: desc,
+                      autofocus: false,
+                      validator: (value) {
+                        if (value.isEmpty) {
+                          return 'Please enter note';
+                        }
+                        return null;
+                      },
+                      decoration: InputDecoration(
+                          hintText: 'Take a note',
+                          contentPadding: const EdgeInsets.all(16.0)),
+                    ),
+                    Padding(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: RaisedButton(
+                          textColor: Colors.white,
+                          child: Text(
+                            "Done",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          onPressed: () async {
+                            if (_formKey2.currentState.validate()) {
+                              if (desc.text.toString() != null &&
+                                  title.text.toString() != null) {
+                                var notes = Notes(1, title.text.toString(),
+                                    desc.text.toString());
+                                await DBProvider.da
+                                    .newTask(notes)
+                                    .then((value) {
+                                  Navigator.pop(context);
+                                  setState(() {});
+                                });
+                              } else {
+                                print("not null");
+                              }
+                            } else {
+                              print("not validate");
+                            }
+                          },
+                        ),
+                      ),
+                      padding: EdgeInsets.all(20),
+                    ),
+                  ],
+                )),
+          ));
     }));
   }
 
   _editNote(Notes item) {
+    final _formKey = GlobalKey<FormState>();
+
     List<bool> _list = [true, false, true, false];
     var title = new TextEditingController();
     var desc = new TextEditingController();
@@ -195,103 +230,110 @@ class TodoListState extends State<TodoList> {
     Navigator.of(context).push(MaterialPageRoute(builder: (context) {
       return Scaffold(
           appBar: AppBar(title: Text('Edit task')),
-          body: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    autofocus: true,
-                    controller: title,
-                    decoration: InputDecoration(
-                        hintText: 'Title',
-                        contentPadding: const EdgeInsets.all(16.0)),
-                    validator: (value) {
-                      if (value.isEmpty) {
-                        return 'Please enter title';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    /*onChanged: (val) {
-                      desc = val;
-                    },*/
-                    controller: desc,
-                    autofocus: false,
-                    validator: (value) {
-                      if (value.isEmpty) {
-                        return 'Please enter note';
-                      }
-                      return null;
-                    },
-                    decoration: InputDecoration(
-                        hintText: 'Take a note',
-                        contentPadding: const EdgeInsets.all(16.0)),
-                  ),
-                  Row(
-                    children: [
-                      Padding(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: RaisedButton(
-                            textColor: Colors.white,
-                            child: Text(
-                              "Done",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            onPressed: () async {
-                              if (_formKey.currentState.validate()) {
-                                if (desc.text.toString() != null &&
-                                    title.text.toString() != null) {
-                                  var notes = Notes(
-                                      item.id,
-                                      title.text.toString(),
-                                      desc.text.toString());
-                                  await DBProvider.da
-                                      .update(notes)
-                                      .then((value) {
-                                    print(value);
-                                    Navigator.pop(context);
-                                    setState(() {});
-                                  });
+          body: SingleChildScrollView(
+            child: Form(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      textCapitalization: TextCapitalization.sentences,
+                      maxLength: 50,
+                      autofocus: true,
+                      controller: title,
+                      decoration: InputDecoration(
+                          hintText: 'Title',
+                          contentPadding: const EdgeInsets.all(16.0)),
+                      validator: (value) {
+                        if (value.isEmpty) {
+                          return 'Please enter title';
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      keyboardType: TextInputType.multiline,
+                      maxLength: null,
+                      maxLines: null,
+                      textInputAction: TextInputAction.newline,
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: desc,
+                      autofocus: false,
+                      validator: (value) {
+                        if (value.isEmpty) {
+                          return 'Please enter note';
+                        }
+                        return null;
+                      },
+                      decoration: InputDecoration(
+                          hintText: 'Take a note',
+                          contentPadding: const EdgeInsets.all(16.0)),
+                    ),
+                    Row(
+                      children: [
+                        Padding(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: RaisedButton(
+                              textColor: Colors.white,
+                              child: Text(
+                                "Done",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onPressed: () async {
+                                if (_formKey.currentState.validate()) {
+                                  if (desc.text.toString() != null &&
+                                      title.text.toString() != null) {
+                                    var notes = Notes(
+                                        item.id,
+                                        title.text.toString(),
+                                        desc.text.toString());
+                                    await DBProvider.da
+                                        .update(notes)
+                                        .then((value) {
+                                      print(value);
+                                      Navigator.pop(context);
+                                      setState(() {});
+                                    });
+                                  } else {
+                                    print("not null");
+                                  }
                                 } else {
-                                  print("not null");
+                                  print("not validate");
                                 }
-                              } else {
-                                print("not validate");
-                              }
-                            },
-                          ),
-                        ),
-                        padding: EdgeInsets.all(20),
-                      ),
-                      Padding(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: RaisedButton.icon(
-                            color: Colors.red,
-                            textColor: Colors.white,
-                            icon: Icon(
-                              Icons.delete_outline,
-                              color: Colors.white,
+                              },
                             ),
-                            label: Text(
-                              "Delete",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            onPressed: () {
-                              DBProvider.da.deleteNote(item.id);
-                              Navigator.of(context).pop();
-                              setState(() {});
-                            },
                           ),
+                          padding: EdgeInsets.all(20),
                         ),
-                        padding: EdgeInsets.all(20),
-                      ),
-                    ],
-                  )
-                ],
-              )));
+                        Padding(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: RaisedButton.icon(
+                              color: Colors.red,
+                              textColor: Colors.white,
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: Colors.white,
+                              ),
+                              label: Text(
+                                "Delete",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onPressed: () {
+                                DBProvider.da.deleteNote(item.id);
+                                Navigator.of(context).pop();
+                                setState(() {});
+                              },
+                            ),
+                          ),
+                          padding: EdgeInsets.all(20),
+                        ),
+                      ],
+                    )
+                  ],
+                )),
+          ));
     }));
   }
 }
