@@ -1,6 +1,6 @@
 # someday
 
-A new Flutter application.
+Trying to build an app like https://apps.apple.com/us/app/someday-one-day-at-a-time/id1537662355
 
 ## Getting Started
 
