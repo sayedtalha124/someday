@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import 'db_provider.dart';
+import 'new_task_screen.dart';
 import 'notes.dart';
 
 void main() {
@@ -80,7 +81,7 @@ class TodoListState extends State<TodoList> {
                   tileColor: Colors.transparent,
                   title: Text(item.title),
                   subtitle: Text(item.desc),
-                  onTap: () => _editNote(item),
+                  onTap: () => _pushAddTodoScreen(item),
                 ),
               ),
             );
@@ -134,89 +135,23 @@ class TodoListState extends State<TodoList> {
     );
   }
 
-  void _pushAddTodoScreen() {
-    final _formKey2 = GlobalKey<FormState>();
-
-    var title = new TextEditingController();
-    var desc = new TextEditingController();
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-      return Scaffold(
-          appBar: AppBar(title: Text('Add a task')),
-          body: SingleChildScrollView(
-            child: Form(
-                key: _formKey2,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      autofocus: true,
-                      textCapitalization: TextCapitalization.sentences,
-                      controller: title,
-                      maxLength: 50,
-                      decoration: InputDecoration(
-                          hintText: 'Title',
-                          contentPadding: const EdgeInsets.all(16.0)),
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return 'Please enter title';
-                        }
-                        return null;
-                      },
-                    ),
-                    TextFormField(
-                      keyboardType: TextInputType.multiline,
-                      maxLength: null,
-                      maxLines: null,
-                      textInputAction: TextInputAction.newline,
-                      textCapitalization: TextCapitalization.sentences,
-                      controller: desc,
-                      autofocus: false,
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return 'Please enter note';
-                        }
-                        return null;
-                      },
-                      decoration: InputDecoration(
-                          hintText: 'Take a note',
-                          contentPadding: const EdgeInsets.all(16.0)),
-                    ),
-                    Padding(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: RaisedButton(
-                          textColor: Colors.white,
-                          child: Text(
-                            "Done",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          onPressed: () async {
-                            if (_formKey2.currentState.validate()) {
-                              if (desc.text.toString() != null &&
-                                  title.text.toString() != null) {
-                                var notes = Notes(1, title.text.toString(),
-                                    desc.text.toString());
-                                await DBProvider.da
-                                    .newTask(notes)
-                                    .then((value) {
-                                  Navigator.pop(context);
-                                  setState(() {});
-                                });
-                              } else {
-                                print("not null");
-                              }
-                            } else {
-                              print("not validate");
-                            }
-                          },
-                        ),
-                      ),
-                      padding: EdgeInsets.all(20),
-                    ),
-                  ],
-                )),
-          ));
+  void _pushAddTodoScreen([Notes notes]) async {
+    var title;
+    var isNew;
+    if (notes == null) {
+      title = 'Add a task';
+      isNew = true;
+    } else {
+      isNew = false;
+      title = 'Edit task';
+    }
+    final result =
+        await Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+      return NewTodo(title, isNew, notes);
     }));
+    if (result != null) {
+      setState(() {});
+    }
   }
 
   _editNote(Notes item) {
