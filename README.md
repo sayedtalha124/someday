@@ -1,6 +1,6 @@
 # someday
 
-Trying to build an app like https://apps.apple.com/us/app/someday-one-day-at-a-time/id1537662355
+A TODO app in flutter with sqlite plugin 
 
 ## Getting Started
 
